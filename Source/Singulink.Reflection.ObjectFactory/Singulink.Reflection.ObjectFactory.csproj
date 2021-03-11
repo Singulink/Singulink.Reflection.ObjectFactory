@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Singulink.Reflection</RootNamespace>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Singulink</Authors>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageTags>factory, activator, formattable</PackageTags>
+    <!-- Source Link -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="stylecop.json" />
+    <None Include="..\..\Resources\Singulink Icon 128x128.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

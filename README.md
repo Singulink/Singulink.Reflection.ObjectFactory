@@ -58,7 +58,7 @@ public void ActivatorCreate()
 [Benchmark]
 public void ActivatorCreateWithParam()
 {
-    _result = (SomeObject)Activator.CreateInstance(typeof(SomeObject), "test")!;
+    _result = (SomeObject)Activator.CreateInstance(typeof(SomeObject), "test");
 }
 
 [Benchmark]

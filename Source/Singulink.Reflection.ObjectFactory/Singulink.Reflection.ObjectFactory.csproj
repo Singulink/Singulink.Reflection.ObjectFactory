@@ -8,6 +8,10 @@
     <Authors>Singulink</Authors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageTags>factory, activator, formattable</PackageTags>
+    <Description>Provides fast cached object activation and formattable object factory delegates.</Description>
+    <Copyright>© Singulink. All rights reserved.</Copyright>
+    <PackageIcon>Singulink Icon 128x128.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/Singulink/Singulink.Reflection.ObjectFactory</PackageProjectUrl>
     <!-- Source Link -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>

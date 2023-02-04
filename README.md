@@ -27,16 +27,9 @@ The package is available on NuGet - simply install the `Singulink.Reflection.Obj
 
 You can view the API on [FuGet](https://www.fuget.org/packages/Singulink.Reflection.ObjectFactory). 
 
-## Benchmarks
+## Benchmarks (.NET 5.0)
 
 ```
-BenchmarkDotNet=v0.12.1, OS=Windows 10.0.19041.867 (2004/?/20H1)
-Intel Core i7-3770 CPU 3.40GHz (Ivy Bridge), 1 CPU, 8 logical and 4 physical cores
-.NET Core SDK=5.0.200
-  [Host]     : .NET Core 5.0.3 (CoreCLR 5.0.321.7212, CoreFX 5.0.321.7212), X64 RyuJIT
-  DefaultJob : .NET Core 5.0.3 (CoreCLR 5.0.321.7212, CoreFX 5.0.321.7212), X64 RyuJIT
-
-
 |                   Method |       Mean |     Error |    StdDev |  Gen 0 | Allocated |
 |------------------------- |-----------:|----------:|----------:|-------:|----------:|
 |          ActivatorCreate |  40.113 ns | 0.3501 ns | 0.3103 ns | 0.0057 |      24 B |

@@ -1,4 +1,4 @@
-# Remove the line below if you want to inherit .editorconfig settings from higher directories
+﻿# Root editor config for all projects in the repo
 root = true
 
 
@@ -8,6 +8,16 @@ root = true
 #### Guidelines ####
 
 guidelines = 160
+
+########### Project XML files ###########
+[*.{csproj, props, targets}]
+
+#### Core EditorConfig Options ####
+
+# Indentation and spacing
+indent_size = 4
+indent_style = space
+tab_width = 4
 
 ########### C# files ###########
 [*.cs]
@@ -71,6 +81,9 @@ dotnet_code_quality_unused_parameters = all:suggestion
 
 #### C# Coding Conventions ####
 
+# Namespace preferences
+csharp_style_namespace_declarations = file_scoped:warning
+
 # var preferences
 csharp_style_var_elsewhere = false:silent
 csharp_style_var_for_built_in_types = false:suggestion
@@ -124,7 +137,7 @@ csharp_new_line_before_else = true
 csharp_new_line_before_finally = true
 csharp_new_line_before_members_in_anonymous_types = true
 csharp_new_line_before_members_in_object_initializers = true
-csharp_new_line_before_open_brace = methods,types
+csharp_new_line_before_open_brace = methods,types,control_blocks,events,indexers,local_functions,properties
 csharp_new_line_between_query_expression_clauses = true
 
 # Indentation preferences
@@ -174,6 +187,14 @@ dotnet_naming_rule.types_should_be_pascalcase.severity = warning
 dotnet_naming_rule.types_should_be_pascalcase.symbols = types
 dotnet_naming_rule.types_should_be_pascalcase.style = pascalcase
 
+dotnet_naming_rule.private_static_field_should_be_s_prefixed_camelcase.severity = suggestion
+dotnet_naming_rule.private_static_field_should_be_s_prefixed_camelcase.symbols = private_static_field
+dotnet_naming_rule.private_static_field_should_be_s_prefixed_camelcase.style = s_prefixed_camelcase
+
+dotnet_naming_rule.private_field_should_be_prefixed_camelcase.severity = warning
+dotnet_naming_rule.private_field_should_be_prefixed_camelcase.symbols = private_field
+dotnet_naming_rule.private_field_should_be_prefixed_camelcase.style = prefixed_camelcase
+
 dotnet_naming_rule.constant_field_should_be_pascalcase.severity = warning
 dotnet_naming_rule.constant_field_should_be_pascalcase.symbols = constant_field
 dotnet_naming_rule.constant_field_should_be_pascalcase.style = pascalcase
@@ -199,11 +220,29 @@ dotnet_naming_symbols.constant_field.applicable_kinds = field
 dotnet_naming_symbols.constant_field.applicable_accessibilities = public, internal, private, protected, protected_internal
 dotnet_naming_symbols.constant_field.required_modifiers = const
 
+dotnet_naming_symbols.private_static_field.applicable_kinds = field
+dotnet_naming_symbols.private_static_field.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_field.required_modifiers = static
+
+dotnet_naming_symbols.private_field.applicable_kinds = field
+dotnet_naming_symbols.private_field.applicable_accessibilities = private
+dotnet_naming_symbols.private_field.required_modifiers =
+
 # Naming styles
 dotnet_naming_style.pascalcase.required_prefix =
 dotnet_naming_style.pascalcase.required_suffix =
 dotnet_naming_style.pascalcase.word_separator =
 dotnet_naming_style.pascalcase.capitalization = pascal_case
+
+dotnet_naming_style.prefixed_camelcase.required_prefix = _
+dotnet_naming_style.prefixed_camelcase.required_suffix =
+dotnet_naming_style.prefixed_camelcase.word_separator =
+dotnet_naming_style.prefixed_camelcase.capitalization = camel_case
+
+dotnet_naming_style.s_prefixed_camelcase.required_prefix = s_
+dotnet_naming_style.s_prefixed_camelcase.required_suffix =
+dotnet_naming_style.s_prefixed_camelcase.word_separator =
+dotnet_naming_style.s_prefixed_camelcase.capitalization = camel_case
 
 dotnet_naming_style.begins_with_i.required_prefix = I
 dotnet_naming_style.begins_with_i.required_suffix =
@@ -212,6 +251,10 @@ dotnet_naming_style.begins_with_i.capitalization = pascal_case
 
 
 #### Analyzer diagnostics ####
+
+stylecop.documentation.documentExposedElements = false
+stylecop.documentation.documentInternalElements = false
+stylecop.documentation.documentInterfaces = false
 
 # SA1503: Braces should not be omitted
 dotnet_diagnostic.SA1503.severity = none
@@ -301,7 +344,7 @@ dotnet_diagnostic.SA1502.severity = none
 dotnet_diagnostic.SA1204.severity = none
 
 # SA1311: Static readonly fields should begin with upper-case letter
-dotnet_diagnostic.SA1311.severity = suggestion
+dotnet_diagnostic.SA1311.severity = none
 
 # CA1034: Nested types should not be visible
 dotnet_diagnostic.CA1034.severity = suggestion
@@ -329,3 +372,12 @@ dotnet_diagnostic.CA1060.severity = none
 
 # SA1519: Braces should not be omitted from multi-line child statement
 dotnet_diagnostic.SA1519.severity = silent
+
+# SA1214: Readonly fields should appear before non-readonly fields
+dotnet_diagnostic.SA1214.severity = suggestion
+
+# SA1518: Use line endings correctly at end of file
+dotnet_diagnostic.SA1518.severity = none
+
+# SA1402: File may only contain a single type
+dotnet_diagnostic.SA1402.severity = none

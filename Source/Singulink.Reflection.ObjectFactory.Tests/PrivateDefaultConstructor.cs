@@ -1,13 +1,12 @@
 ﻿using System;
 
-namespace Singulink.Reflection.Tests
-{
-    public class PrivateDefaultConstructor
-    {
-        public bool InitializerCalled { get; } = true;
+namespace Singulink.Reflection.Tests;
 
-        private PrivateDefaultConstructor()
-        {
-        }
+public class PrivateDefaultConstructor
+{
+    public bool InitializerCalled { get; } = true;
+
+    private PrivateDefaultConstructor()
+    {
     }
 }

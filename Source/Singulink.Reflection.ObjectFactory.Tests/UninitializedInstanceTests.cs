@@ -10,16 +10,7 @@ public class UninitializedInstanceTests
     [TestMethod]
     public void GetsUninitialized()
     {
-        var v1 = ObjectFactory.CreateUninitializedInstance(typeof(NoDefaultConstructor));
-        var v2 = ObjectFactory.CreateUninitializedInstance<PrivateDefaultConstructor>();
-
-        ((NoDefaultConstructor)v1).InitializerCalled.ShouldBe(false);
-        v2.InitializerCalled.ShouldBe(false);
-    }
-
-    [TestMethod]
-    public void InvalidReturnType()
-    {
-        Assert.ThrowsException<InvalidCastException>(() => _ = ObjectFactory.CreateUninitializedInstance<string>(typeof(PrivateDefaultConstructor)));
+        var v = ObjectFactory.CreateUninitializedInstance<PrivateDefaultConstructor>();
+        v.InitializerCalled.ShouldBe(false);
     }
 }

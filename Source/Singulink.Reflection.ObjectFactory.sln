@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.6.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34525.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Singulink.Reflection.ObjectFactory", "Singulink.Reflection.ObjectFactory\Singulink.Reflection.ObjectFactory.csproj", "{621E0340-BD6F-4480-8891-68F4512090A2}"
 EndProject
@@ -9,11 +9,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		Directory.Build.props = Directory.Build.props
+		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{9C3F4D3B-D1A5-41F8-B075-D1FDBCD6F3FE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Singulink.Reflection.ObjectFactory.Tests", "Singulink.Reflection.ObjectFactory.Tests\Singulink.Reflection.ObjectFactory.Tests.csproj", "{BB7771F0-3363-4577-8CD4-4888F49E718A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Singulink.Reflection.ObjectFactory.Tests", "Singulink.Reflection.ObjectFactory.Tests\Singulink.Reflection.ObjectFactory.Tests.csproj", "{BB7771F0-3363-4577-8CD4-4888F49E718A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

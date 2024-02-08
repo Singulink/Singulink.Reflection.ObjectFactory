@@ -21,11 +21,11 @@ public readonly struct DefaultActivator<T>
     // * If running on JIT: always use delegate.
     // * If running on AOT: Activator.CreateInstance<T>() is faster than the delegate so use it if there is a public ctor.
     //   The delegate is faster than CreateInstance(Type).
-    private static readonly bool _useGenericActivator = typeof(T).IsValueType ||
+    internal static readonly bool UseGenericSystemActivator = typeof(T).IsValueType ||
         (!RuntimeFeature.IsDynamicCodeCompiled && typeof(T).GetConstructor(Type.EmptyTypes) != null);
 #endif
 
-    private readonly Func<T>? _activator;
+    internal readonly Func<T>? _activator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultActivator{T}"/> struct.
@@ -49,7 +49,7 @@ public readonly struct DefaultActivator<T>
     public Func<T> AsDelegate()
     {
 #if !NETSTANDARD
-        if (_useGenericActivator)
+        if (UseGenericSystemActivator)
             return static () => Activator.CreateInstance<T>();
 #endif
 
@@ -66,7 +66,7 @@ public readonly struct DefaultActivator<T>
     public T Invoke()
     {
 #if !NETSTANDARD
-        if (_useGenericActivator)
+        if (UseGenericSystemActivator)
             return Activator.CreateInstance<T>();
 #endif
 

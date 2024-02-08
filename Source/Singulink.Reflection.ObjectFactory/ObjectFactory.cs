@@ -23,28 +23,63 @@ public static class ObjectFactory
 
     private static class DefaultActivatorCache<[DynamicallyAccessedMembers(DefaultConstructors)] T>
     {
+        public static readonly Func<T>? Activator = TryGetActivator();
         public static readonly bool IsPublic = typeof(T).IsValueType || typeof(T).GetConstructor(Type.EmptyTypes) is not null;
-        public static readonly DefaultActivator<T> Instance = GetActivator<T>(true);
+
+        private static Func<T>? TryGetActivator()
+        {
+#if !NETSTANDARD
+            if (DefaultActivator<T>.UseGenericSystemActivator)
+                return null;
+#endif
+
+            try
+            {
+#pragma warning disable IL2087 // Justification: Only default ctors needed.
+                return GetActivatorByDelegate<Func<T>>(typeof(T), true);
+#pragma warning restore IL2087
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Creates an object of the specified type using the public default constructor.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T CreateInstance<[DynamicallyAccessedMembers(PublicDefaultConstructor)] T>()
+    {
+#pragma warning disable IL2091 // Justification: Only public default ctor needed.
+        return CreateInstance<T>(false);
+#pragma warning restore IL2091
     }
 
     /// <summary>
     /// Creates an object of the specified type using the default constructor, optionally calling a non-public constructor as well.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T CreateInstance<[DynamicallyAccessedMembers(DefaultConstructors)] T>(bool nonPublic = false)
+    public static T CreateInstance<[DynamicallyAccessedMembers(DefaultConstructors)] T>(bool nonPublic)
     {
 #if !NETSTANDARD
-        if (!RuntimeFeature.IsDynamicCodeCompiled && !nonPublic)
-            return Activator.CreateInstance<T>();
-
-        if (typeof(T).IsValueType)
+        if (DefaultActivator<T>.UseGenericSystemActivator)
             return Activator.CreateInstance<T>();
 #endif
 
         if (!DefaultActivatorCache<T>.IsPublic && !nonPublic)
             ThrowNonPublicConstructorException(typeof(T));
 
-        return DefaultActivatorCache<T>.Instance.Invoke();
+        var activator = DefaultActivatorCache<T>.Activator;
+
+        if (activator == null)
+        {
+            Throw();
+            static void Throw() => throw new MissingMethodException($"No parameterless constructor defined for type '{typeof(T)}'.");
+        }
+
+        return DefaultActivatorCache<T>.Activator!();
     }
 
     /// <summary>
@@ -223,7 +258,8 @@ public static class ObjectFactory
         return (TDelegate)info.Activator;
     }
 
-    private static (TDelegate Activator, bool IsPublic) CreateActivator<TDelegate>([DynamicallyAccessedMembers(AllConstructors)] Type objectType, bool nonPublic) where TDelegate : Delegate
+    private static (TDelegate Activator, bool IsPublic) CreateActivator<TDelegate>([DynamicallyAccessedMembers(AllConstructors)] Type objectType, bool nonPublic)
+        where TDelegate : Delegate
     {
 #pragma warning disable IL2090 // Justification: Delegates always generate metadata for the Invoke method.
         var delegateInfo = typeof(TDelegate).GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
@@ -259,7 +295,9 @@ public static class ObjectFactory
         else
         {
             const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            ConstructorInfo constructor = objectType.GetConstructor(bindingFlags, null, parameterTypes, null) ?? throw new MissingMethodException("A matching constructor was not found.");
+
+            ConstructorInfo constructor = objectType.GetConstructor(bindingFlags, null, parameterTypes, null)
+                ?? throw new MissingMethodException("A matching constructor was not found.");
 
             isPublic = constructor.IsPublic;
 

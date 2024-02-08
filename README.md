@@ -34,7 +34,7 @@ You can view the API on [FuGet](https://www.fuget.org/packages/Singulink.Reflect
 | Method                                   | Mean        | Error     | StdDev    | Gen0   | Allocated |
 |----------------------------------------- |------------:|----------:|----------:|-------:|----------:|
 | Activator_Object                         |  14.9644 ns | 0.2901 ns | 0.3341 ns | 0.0057 |      24 B |
-| ObjectFactory_Object                     |   6.6270 ns | 0.0364 ns | 0.0323 ns | 0.0057 |      24 B |
+| ObjectFactory_Object                     |   6.5780 ns | 0.0587 ns | 0.0549 ns | 0.0057 |      24 B |
 | ObjectFactory_Object_Delegate            |   6.3640 ns | 0.0508 ns | 0.0451 ns | 0.0057 |      24 B |
 |----------------------------------------- |------------:|----------:|----------:|-------:|----------:|
 | Activator_ObjectPrivateCtor              |  11.9688 ns | 0.0894 ns | 0.0793 ns | 0.0057 |      24 B |

@@ -10,7 +10,7 @@ using System.Runtime.Serialization;
 namespace Singulink.Reflection;
 
 /// <summary>
-/// Provides methods to create objects and delegates that create objects based on specified constructor signatures.
+/// Provides methods to create objects and delegates that create instances based on specified constructor signatures.
 /// </summary>
 public static class ObjectFactory
 {
@@ -21,41 +21,52 @@ public static class ObjectFactory
 
     private static readonly ConcurrentDictionary<(Type ObjectType, Type DelegateType), (Delegate Activator, bool IsPublic)> _delegateActivatorCache = new();
 
+    private static class DefaultActivatorCache<[DynamicallyAccessedMembers(DefaultConstructors)] T>
+    {
+        public static readonly bool IsPublic = typeof(T).IsValueType || typeof(T).GetConstructor(Type.EmptyTypes) is not null;
+        public static readonly DefaultActivator<T> Instance = GetActivator<T>(true);
+    }
+
     /// <summary>
     /// Creates an object of the specified type using the default constructor, optionally calling a non-public constructor as well.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TObject CreateInstance<[DynamicallyAccessedMembers(DefaultConstructors)] TObject>(bool nonPublic = false)
+    public static T CreateInstance<[DynamicallyAccessedMembers(DefaultConstructors)] T>(bool nonPublic = false)
     {
-        if (typeof(TObject).IsValueType)
-            return Activator.CreateInstance<TObject>();
+#if !NETSTANDARD
+        if (!RuntimeFeature.IsDynamicCodeCompiled && !nonPublic)
+            return Activator.CreateInstance<T>();
 
-        return (TObject)Activator.CreateInstance(typeof(TObject), nonPublic)!;
+        if (typeof(T).IsValueType)
+            return Activator.CreateInstance<T>();
+#endif
+
+        if (!DefaultActivatorCache<T>.IsPublic && !nonPublic)
+            ThrowNonPublicConstructorException(typeof(T));
+
+        return DefaultActivatorCache<T>.Instance.Invoke();
     }
 
     /// <summary>
     /// Creates an uninitialized object of the specified type.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TObject CreateUninitializedInstance<[DynamicallyAccessedMembers(AllConstructors)] TObject>()
+    public static T CreateUninitializedInstance<[DynamicallyAccessedMembers(AllConstructors)] T>()
     {
-        if (typeof(TObject).IsValueType)
-            return default!;
-
 #if NETSTANDARD
-        return (TObject)FormatterServices.GetUninitializedObject(typeof(TObject));
+        return (T)FormatterServices.GetUninitializedObject(typeof(T));
 #else
-        return (TObject)RuntimeHelpers.GetUninitializedObject(typeof(TObject));
+        return (T)RuntimeHelpers.GetUninitializedObject(typeof(T));
 #endif
     }
 
     /// <summary>
     /// Gets an activator delegate that creates an object of the specified type using the public default constructor.
     /// </summary>
-    public static Func<TObject> GetActivator<[DynamicallyAccessedMembers(PublicDefaultConstructor)] TObject>()
+    public static DefaultActivator<T> GetActivator<[DynamicallyAccessedMembers(PublicDefaultConstructor)] T>()
     {
 #pragma warning disable IL2091 // Justification: Only public default ctor needed.
-        return GetActivator<TObject>(false);
+        return GetActivator<T>(false);
 #pragma warning restore IL2091
     }
 
@@ -63,20 +74,25 @@ public static class ObjectFactory
     /// Gets an activator delegate that creates an object of the specified type using the default constructor, optionally calling a non-public
     /// constructor as well.
     /// </summary>
-    public static Func<TObject> GetActivator<[DynamicallyAccessedMembers(DefaultConstructors)] TObject>(bool nonPublic)
+    public static DefaultActivator<T> GetActivator<[DynamicallyAccessedMembers(DefaultConstructors)] T>(bool nonPublic)
     {
+#if !NETSTANDARD
+        if (typeof(T).IsValueType)
+            return default;
+#endif
+
 #pragma warning disable IL2087 // Justification: Only default ctors needed.
-        return GetActivatorByDelegate<Func<TObject>>(typeof(TObject), nonPublic);
+        return new(GetActivatorByDelegate<Func<T>>(typeof(T), nonPublic));
 #pragma warning restore IL2087
     }
 
     /// <summary>
     /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter type.
     /// </summary>
-    public static Func<TParam, TObject> GetActivator<TParam, [DynamicallyAccessedMembers(PublicConstructors)] TObject>()
+    public static Func<TParam, T> GetActivator<TParam, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
 #pragma warning disable IL2091 // Justification: Only public ctors needed.
-        return GetActivator<TParam, TObject>(false);
+        return GetActivator<TParam, T>(false);
 #pragma warning restore IL2091
     }
 
@@ -84,18 +100,18 @@ public static class ObjectFactory
     /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter type, optionally
     /// calling non-public constructors as well.
     /// </summary>
-    public static Func<TParam, TObject> GetActivator<TParam, [DynamicallyAccessedMembers(AllConstructors)] TObject>(bool nonPublic)
+    public static Func<TParam, T> GetActivator<TParam, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
-        return GetActivatorByDelegate<Func<TParam, TObject>>(typeof(TObject), nonPublic);
+        return GetActivatorByDelegate<Func<TParam, T>>(typeof(T), nonPublic);
     }
 
     /// <summary>
     /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
-    public static Func<TParam1, TParam2, TObject> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(PublicConstructors)] TObject>()
+    public static Func<TParam1, TParam2, T> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
 #pragma warning disable IL2091 // Justification: Only public ctors needed.
-        return GetActivator<TParam1, TParam2, TObject>(false);
+        return GetActivator<TParam1, TParam2, T>(false);
 #pragma warning restore IL2091
     }
 
@@ -103,18 +119,18 @@ public static class ObjectFactory
     /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
-    public static Func<TParam1, TParam2, TObject> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(AllConstructors)] TObject>(bool nonPublic)
+    public static Func<TParam1, TParam2, T> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
-        return GetActivatorByDelegate<Func<TParam1, TParam2, TObject>>(typeof(TObject), nonPublic);
+        return GetActivatorByDelegate<Func<TParam1, TParam2, T>>(typeof(T), nonPublic);
     }
 
     /// <summary>
     /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
-    public static Func<TParam1, TParam2, TParam3, TObject> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(PublicConstructors)] TObject>()
+    public static Func<TParam1, TParam2, TParam3, T> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
 #pragma warning disable IL2091 // Justification: Only public ctors needed.
-        return GetActivator<TParam1, TParam2, TParam3, TObject>(false);
+        return GetActivator<TParam1, TParam2, TParam3, T>(false);
 #pragma warning restore IL2091
     }
 
@@ -122,18 +138,18 @@ public static class ObjectFactory
     /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
-    public static Func<TParam1, TParam2, TParam3, TObject> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(AllConstructors)] TObject>(bool nonPublic)
+    public static Func<TParam1, TParam2, TParam3, T> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
-        return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, TObject>>(typeof(TObject), nonPublic);
+        return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, T>>(typeof(T), nonPublic);
     }
 
     /// <summary>
     /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
-    public static Func<TParam1, TParam2, TParam3, TParam4, TObject> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(PublicConstructors)] TObject>()
+    public static Func<TParam1, TParam2, TParam3, TParam4, T> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
 #pragma warning disable IL2091 // Justification: Only public ctors needed.
-        return GetActivator<TParam1, TParam2, TParam3, TParam4, TObject>(false);
+        return GetActivator<TParam1, TParam2, TParam3, TParam4, T>(false);
 #pragma warning restore IL2091
     }
 
@@ -141,18 +157,18 @@ public static class ObjectFactory
     /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
-    public static Func<TParam1, TParam2, TParam3, TParam4, TObject> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(AllConstructors)] TObject>(bool nonPublic)
+    public static Func<TParam1, TParam2, TParam3, TParam4, T> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
-        return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, TObject>>(typeof(TObject), nonPublic);
+        return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, T>>(typeof(T), nonPublic);
     }
 
     /// <summary>
     /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
-    public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, TObject> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(PublicConstructors)] TObject>()
+    public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, T> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
 #pragma warning disable IL2091 // Justification: Only public ctors needed.
-        return GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, TObject>(false);
+        return GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, T>(false);
 #pragma warning restore IL2091
     }
 
@@ -160,9 +176,9 @@ public static class ObjectFactory
     /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
-    public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, TObject> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(AllConstructors)] TObject>(bool nonPublic)
+    public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, T> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
-        return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, TParam5, TObject>>(typeof(TObject), nonPublic);
+        return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, TParam5, T>>(typeof(T), nonPublic);
     }
 
     /// <summary>
@@ -186,6 +202,10 @@ public static class ObjectFactory
     /// <param name="objectType">The type of object to construct.</param>
     /// <param name="nonPublic"><see langword="true"/> to search non-public constructors as well, otherwise <see langword="false"/>.</param>
     /// <returns>A delegate that calls the object constructor.</returns>
+    /// <remarks>
+    /// For performance reasons, this method should not be used to create delegates that call parameterless constructors - prefer <see
+    /// cref="GetActivator{T}()"/> for a more optimal approach.
+    /// </remarks>
     public static TDelegate GetActivatorByDelegate<TDelegate>([DynamicallyAccessedMembers(AllConstructors)] Type objectType, bool nonPublic)
         where TDelegate : Delegate
     {

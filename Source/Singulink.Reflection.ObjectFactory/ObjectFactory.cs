@@ -61,8 +61,11 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the public default constructor.
+    /// Gets an activator that creates objects of the specified type using the public default constructor.
     /// </summary>
+    /// <remarks>
+    /// You can get a <see cref="Func{TResult}"/> delegate by calling <see cref="DefaultActivator{T}.AsDelegate"/> on the returned activator.
+    /// </remarks>
     public static DefaultActivator<T> GetActivator<[DynamicallyAccessedMembers(PublicDefaultConstructor)] T>()
     {
 #pragma warning disable IL2091 // Justification: Only public default ctor needed.
@@ -71,9 +74,11 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the default constructor, optionally calling a non-public
-    /// constructor as well.
+    /// Gets an activator that creates objects of the specified type using the default constructor, optionally calling a non-public constructor as well.
     /// </summary>
+    /// <remarks>
+    /// You can get a <see cref="Func{TResult}"/> delegate by calling <see cref="DefaultActivator{T}.AsDelegate"/> on the returned activator.
+    /// </remarks>
     public static DefaultActivator<T> GetActivator<[DynamicallyAccessedMembers(DefaultConstructors)] T>(bool nonPublic)
     {
 #if !NETSTANDARD
@@ -87,7 +92,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter type.
+    /// Gets an activator delegate that creates objects of the specified type using the public constructor that accepts the specified parameter type.
     /// </summary>
     public static Func<TParam, T> GetActivator<TParam, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
@@ -97,7 +102,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter type, optionally
+    /// Gets an activator delegate that creates objects of the specified type using the constructor that accepts the specified parameter type, optionally
     /// calling non-public constructors as well.
     /// </summary>
     public static Func<TParam, T> GetActivator<TParam, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
@@ -106,7 +111,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
+    /// Gets an activator delegate that creates objects of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
     public static Func<TParam1, TParam2, T> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
@@ -116,7 +121,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
+    /// Gets an activator delegate that creates objects of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
     public static Func<TParam1, TParam2, T> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
@@ -125,7 +130,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
+    /// Gets an activator delegate that creates objects of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, T> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
@@ -135,7 +140,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
+    /// Gets an activator delegate that creates objects of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, T> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
@@ -144,7 +149,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
+    /// Gets an activator delegate that creates objects of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, T> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
@@ -154,7 +159,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
+    /// Gets an activator delegate that creates objects of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, T> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
@@ -163,7 +168,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the public constructor that accepts the specified parameter types.
+    /// Gets an activator delegate that creates objects of the specified type using the public constructor that accepts the specified parameter types.
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, T> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
@@ -173,7 +178,7 @@ public static class ObjectFactory
     }
 
     /// <summary>
-    /// Gets an activator delegate that creates an object of the specified type using the constructor that accepts the specified parameter types, optionally
+    /// Gets an activator delegate that creates objects of the specified type using the constructor that accepts the specified parameter types, optionally
     /// calling non-public constructors as well.
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, T> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)

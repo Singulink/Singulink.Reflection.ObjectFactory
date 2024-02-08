@@ -29,7 +29,7 @@ public readonly struct DefaultActivator<T>
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultActivator{T}"/> struct.
-    /// Only call this constructor if the type is a reference type and dynamic code is compiled (otherwise return a default instance).
+    /// Only call this constructor if the type is a reference type.
     /// </summary>
     internal DefaultActivator(Func<T> activator)
     {

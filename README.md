@@ -120,7 +120,7 @@ public SomeObject ObjectFactory_Object()
 }
 
 [Benchmark]
-public SomeObject ObjectFactory_Object_Cached()
+public SomeObject ObjectFactory_Object_Delegate()
 {
     return _objectFactory.Invoke();
 }
@@ -138,7 +138,7 @@ public SomeObjectPrivateCtor ObjectFactory_ObjectPrivateCtor()
 }
 
 [Benchmark]
-public SomeObjectPrivateCtor ObjectFactory_ObjectPrivateCtor_Cached()
+public SomeObjectPrivateCtor ObjectFactory_ObjectPrivateCtor_Delegate()
 {
     return _objectFactoryPrivateCtor.Invoke();
 }
@@ -150,7 +150,7 @@ public SomeObject Activator_ObjectWithParam()
 }
 
 [Benchmark]
-public SomeObject ObjectFactory_ObjectWithParam_Cached()
+public SomeObject ObjectFactory_ObjectWithParam_Delegate()
 {
     return _objectFactoryWithParam.Invoke("test");
 }
@@ -168,7 +168,7 @@ public SomeStruct ObjectFactory_Struct()
 }
 
 [Benchmark]
-public SomeStruct ObjectFactory_Struct_Cached()
+public SomeStruct ObjectFactory_Struct_Delegate()
 {
     return _structFactory.Invoke();
 }
@@ -180,7 +180,7 @@ public SomeStruct Activator_StructWithParams()
 }
 
 [Benchmark]
-public SomeStruct ObjectFactory_StructWithParams_Cached()
+public SomeStruct ObjectFactory_StructWithParams_Delegate()
 {
     return _structFactoryWithParams.Invoke(1, 2);
 }

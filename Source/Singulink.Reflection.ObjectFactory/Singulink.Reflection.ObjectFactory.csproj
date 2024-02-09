@@ -1,41 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
-    <RootNamespace>Singulink.Reflection</RootNamespace>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>2.0.0</Version>
-    <Authors>Singulink</Authors>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageTags>factory, activator, formattable</PackageTags>
-    <Description>Provides fast object activation and object factory delegates.</Description>
-    <Copyright>© Singulink. All rights reserved.</Copyright>
-    <PackageIcon>Singulink Icon 128x128.png</PackageIcon>
-    <PackageProjectUrl>https://github.com/Singulink/Singulink.Reflection.ObjectFactory</PackageProjectUrl>
-    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">true</IsAotCompatible>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+        <RootNamespace>Singulink.Reflection</RootNamespace>
+        <SignAssembly>true</SignAssembly>
+        <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Version>2.1.0</Version>
+        <Authors>Singulink</Authors>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageTags>factory, activator, formattable</PackageTags>
+        <Description>Lightning fast methods to create objects and get delegates that call object constructors with matching parameters</Description>
+        <Copyright>© Singulink. All rights reserved.</Copyright>
+        <PackageIcon>Singulink Icon 128x128.png</PackageIcon>
+        <PackageProjectUrl>https://github.com/Singulink/Singulink.Reflection.ObjectFactory</PackageProjectUrl>
+        <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">true</IsAotCompatible>
+    </PropertyGroup>
 
-  <PropertyGroup Label="Source Link" Condition="'$(Configuration)' == 'Release'">
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <IncludeSymbols>true</IncludeSymbols>
-    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-  </PropertyGroup>
+    <PropertyGroup Label="Source Link" Condition="'$(Configuration)' == 'Release'">
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <IncludeSymbols>true</IncludeSymbols>
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
 
-  <ItemGroup Label="Source Link" Condition="'$(Configuration)' == 'Release'">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
-  </ItemGroup>
+    <ItemGroup Label="Source Link" Condition="'$(Configuration)' == 'Release'">
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <None Remove="stylecop.json" />
-    <None Include="..\..\Resources\Singulink Icon 128x128.png">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
+    <ItemGroup>
+        <None Remove="stylecop.json" />
+        <None Include="..\..\Resources\Singulink Icon 128x128.png">
+            <Pack>True</Pack>
+            <PackagePath></PackagePath>
+        </None>
+    </ItemGroup>
 
-  <ItemGroup>
-    <AdditionalFiles Include="stylecop.json" />
-  </ItemGroup>
+    <ItemGroup>
+        <AdditionalFiles Include="stylecop.json" />
+    </ItemGroup>
 </Project>

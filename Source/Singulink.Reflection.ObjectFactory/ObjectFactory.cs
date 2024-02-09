@@ -9,6 +9,8 @@ using System.Runtime.Serialization;
 
 namespace Singulink.Reflection;
 
+#pragma warning disable SA1010 // Opening square brackets should be spaced correctly triggers on collection literals.
+
 /// <summary>
 /// Provides methods to create objects and delegates that create instances based on specified constructor signatures.
 /// </summary>
@@ -19,32 +21,15 @@ public static class ObjectFactory
     private const DynamicallyAccessedMemberTypes PublicConstructors = DynamicallyAccessedMemberTypes.PublicConstructors;
     private const DynamicallyAccessedMemberTypes DefaultConstructors = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors;
 
-    private static readonly ConcurrentDictionary<(Type ObjectType, Type DelegateType), (Delegate Activator, bool IsPublic)> _delegateActivatorCache = new();
+    private record struct Key(
+        [property: DynamicallyAccessedMembers(AllConstructors)]
+        [param: DynamicallyAccessedMembers(AllConstructors)]
+        Type ObjectType,
+        Type DelegateType);
 
-    private static class DefaultActivatorCache<[DynamicallyAccessedMembers(DefaultConstructors)] T>
-    {
-        public static readonly Func<T>? Activator = TryGetActivator();
-        public static readonly bool IsPublic = typeof(T).IsValueType || typeof(T).GetConstructor(Type.EmptyTypes) is not null;
+    private record struct DelegateInfo(Delegate Activator, bool IsPublic);
 
-        private static Func<T>? TryGetActivator()
-        {
-#if !NETSTANDARD
-            if (DefaultActivator<T>.UseGenericSystemActivator)
-                return null;
-#endif
-
-            try
-            {
-#pragma warning disable IL2087 // Justification: Only default ctors needed.
-                return GetActivatorByDelegate<Func<T>>(typeof(T), true);
-#pragma warning restore IL2087
-            }
-            catch
-            {
-                return null;
-            }
-        }
-    }
+    private static readonly ConcurrentDictionary<Key, DelegateInfo> s_delegateActivatorCache = new();
 
     /// <summary>
     /// Creates an object of the specified type using the public default constructor.
@@ -52,7 +37,7 @@ public static class ObjectFactory
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T CreateInstance<[DynamicallyAccessedMembers(PublicDefaultConstructor)] T>()
     {
-#pragma warning disable IL2091 // Justification: Only public default ctor needed.
+#pragma warning disable IL2091 // Only public default ctor needed.
         return CreateInstance<T>(false);
 #pragma warning restore IL2091
     }
@@ -64,22 +49,20 @@ public static class ObjectFactory
     public static T CreateInstance<[DynamicallyAccessedMembers(DefaultConstructors)] T>(bool nonPublic)
     {
 #if !NETSTANDARD
-        if (DefaultActivator<T>.UseGenericSystemActivator)
+        // Duplicate IsValueType check for AOT. Do not remove.
+        if (typeof(T).IsValueType || DefaultActivator<T>.UseSystemActivator)
             return Activator.CreateInstance<T>();
 #endif
 
-        if (!DefaultActivatorCache<T>.IsPublic && !nonPublic)
-            ThrowNonPublicConstructorException(typeof(T));
+        if (!nonPublic && !DefaultActivator<T>.IsPublic)
+            ThrowNonPublicCtorException(typeof(T));
 
-        var activator = DefaultActivatorCache<T>.Activator;
+        var activatorDelegate = DefaultActivator<T>.Delegate;
 
-        if (activator == null)
-        {
-            Throw();
-            static void Throw() => throw new MissingMethodException($"No parameterless constructor defined for type '{typeof(T)}'.");
-        }
+        if (activatorDelegate == null)
+            ThrowNoParameterlessCtor(typeof(T));
 
-        return DefaultActivatorCache<T>.Activator!();
+        return activatorDelegate!.Invoke();
     }
 
     /// <summary>
@@ -103,7 +86,7 @@ public static class ObjectFactory
     /// </remarks>
     public static DefaultActivator<T> GetActivator<[DynamicallyAccessedMembers(PublicDefaultConstructor)] T>()
     {
-#pragma warning disable IL2091 // Justification: Only public default ctor needed.
+#pragma warning disable IL2091 // Only public default ctor needed.
         return GetActivator<T>(false);
 #pragma warning restore IL2091
     }
@@ -112,7 +95,7 @@ public static class ObjectFactory
     /// Gets an activator that creates objects of the specified type using the default constructor, optionally calling a non-public constructor as well.
     /// </summary>
     /// <remarks>
-    /// You can get a <see cref="Func{TResult}"/> delegate by calling <see cref="DefaultActivator{T}.AsDelegate"/> on the returned activator.
+    /// You can get a <see cref="Func{TResult}"/> delegate with the <see cref="DefaultActivator{T}.AsDelegate"/> method on the returned activator.
     /// </remarks>
     public static DefaultActivator<T> GetActivator<[DynamicallyAccessedMembers(DefaultConstructors)] T>(bool nonPublic)
     {
@@ -120,10 +103,15 @@ public static class ObjectFactory
         if (typeof(T).IsValueType)
             return default;
 #endif
+        var activatorDelegate = DefaultActivator<T>.Delegate;
 
-#pragma warning disable IL2087 // Justification: Only default ctors needed.
-        return new(GetActivatorByDelegate<Func<T>>(typeof(T), nonPublic));
-#pragma warning restore IL2087
+        if (activatorDelegate == null)
+            ThrowNoParameterlessCtor(typeof(T));
+
+        if (!nonPublic && !DefaultActivator<T>.IsPublic)
+            ThrowNonPublicCtorException(typeof(T));
+
+        return new(activatorDelegate!);
     }
 
     /// <summary>
@@ -131,7 +119,7 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam, T> GetActivator<TParam, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
-#pragma warning disable IL2091 // Justification: Only public ctors needed.
+#pragma warning disable IL2091 // Only public ctors needed.
         return GetActivator<TParam, T>(false);
 #pragma warning restore IL2091
     }
@@ -142,6 +130,17 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam, T> GetActivator<TParam, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
+#if NET8_0_OR_GREATER
+        if (!RuntimeFeature.IsDynamicCodeCompiled)
+        {
+            return GetOrCreateActivatorByDelegate<Func<TParam, T>>(typeof(T), nonPublic, static _ => {
+                var constructor = GetConstructor(typeof(T), [typeof(TParam)]);
+                var invoker = ConstructorInvoker.Create(constructor);
+                return new((TParam p) => (T)invoker.Invoke(p), constructor.IsPublic);
+            });
+        }
+#endif
+
         return GetActivatorByDelegate<Func<TParam, T>>(typeof(T), nonPublic);
     }
 
@@ -150,7 +149,7 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, T> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
-#pragma warning disable IL2091 // Justification: Only public ctors needed.
+#pragma warning disable IL2091 // Only public ctors needed.
         return GetActivator<TParam1, TParam2, T>(false);
 #pragma warning restore IL2091
     }
@@ -161,6 +160,17 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, T> GetActivator<TParam1, TParam2, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
+#if NET8_0_OR_GREATER
+        if (!RuntimeFeature.IsDynamicCodeCompiled)
+        {
+            return GetOrCreateActivatorByDelegate<Func<TParam1, TParam2, T>>(typeof(T), nonPublic, static _ => {
+                var constructor = GetConstructor(typeof(T), [typeof(TParam1), typeof(TParam2)]);
+                var invoker = ConstructorInvoker.Create(constructor);
+                return new((TParam1 p1, TParam2 p2) => (T)invoker.Invoke(p1, p2), constructor.IsPublic);
+            });
+        }
+#endif
+
         return GetActivatorByDelegate<Func<TParam1, TParam2, T>>(typeof(T), nonPublic);
     }
 
@@ -169,7 +179,7 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, T> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
-#pragma warning disable IL2091 // Justification: Only public ctors needed.
+#pragma warning disable IL2091 // Only public ctors needed.
         return GetActivator<TParam1, TParam2, TParam3, T>(false);
 #pragma warning restore IL2091
     }
@@ -180,6 +190,17 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, T> GetActivator<TParam1, TParam2, TParam3, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
+#if NET8_0_OR_GREATER
+        if (!RuntimeFeature.IsDynamicCodeCompiled)
+        {
+            return GetOrCreateActivatorByDelegate<Func<TParam1, TParam2, TParam3, T>>(typeof(T), nonPublic, static _ => {
+                var constructor = GetConstructor(typeof(T), [typeof(TParam1), typeof(TParam2), typeof(TParam3)]);
+                var invoker = ConstructorInvoker.Create(constructor);
+                return new((TParam1 p1, TParam2 p2, TParam3 p3) => (T)invoker.Invoke(p1, p2, p3), constructor.IsPublic);
+            });
+        }
+#endif
+
         return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, T>>(typeof(T), nonPublic);
     }
 
@@ -188,7 +209,7 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, T> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
-#pragma warning disable IL2091 // Justification: Only public ctors needed.
+#pragma warning disable IL2091 // Only public ctors needed.
         return GetActivator<TParam1, TParam2, TParam3, TParam4, T>(false);
 #pragma warning restore IL2091
     }
@@ -199,6 +220,17 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, T> GetActivator<TParam1, TParam2, TParam3, TParam4, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
+#if NET8_0_OR_GREATER
+        if (!RuntimeFeature.IsDynamicCodeCompiled)
+        {
+            return GetOrCreateActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, T>>(typeof(T), nonPublic, static _ => {
+                var constructor = GetConstructor(typeof(T), [typeof(TParam1), typeof(TParam2), typeof(TParam3), typeof(TParam4)]);
+                var invoker = ConstructorInvoker.Create(constructor);
+                return new((TParam1 p1, TParam2 p2, TParam3 p3, TParam4 p4) => (T)invoker.Invoke(p1, p2, p3, p4), constructor.IsPublic);
+            });
+        }
+#endif
+
         return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, T>>(typeof(T), nonPublic);
     }
 
@@ -207,7 +239,7 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, T> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(PublicConstructors)] T>()
     {
-#pragma warning disable IL2091 // Justification: Only public ctors needed.
+#pragma warning disable IL2091 // Only public ctors needed.
         return GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, T>(false);
 #pragma warning restore IL2091
     }
@@ -218,6 +250,23 @@ public static class ObjectFactory
     /// </summary>
     public static Func<TParam1, TParam2, TParam3, TParam4, TParam5, T> GetActivator<TParam1, TParam2, TParam3, TParam4, TParam5, [DynamicallyAccessedMembers(AllConstructors)] T>(bool nonPublic)
     {
+#if NET8_0_OR_GREATER
+        if (!RuntimeFeature.IsDynamicCodeCompiled)
+        {
+            return GetOrCreateActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, TParam5, T>>(typeof(T), false, static _ => {
+                var constructor = GetConstructor(typeof(T), [typeof(TParam1), typeof(TParam2), typeof(TParam3), typeof(TParam4), typeof(TParam5)]);
+                var invoker = ConstructorInvoker.Create(constructor);
+
+                return new DelegateInfo(
+                    (TParam1 p1, TParam2 p2, TParam3 p3, TParam4 p4, TParam5 p5) => {
+                        Span<object?> args = [p1, p2, p3, p4, p5];
+                        return (T)invoker.Invoke(args);
+                    },
+                    constructor.IsPublic);
+            });
+        }
+#endif
+
         return GetActivatorByDelegate<Func<TParam1, TParam2, TParam3, TParam4, TParam5, T>>(typeof(T), nonPublic);
     }
 
@@ -230,7 +279,7 @@ public static class ObjectFactory
     public static TDelegate GetActivatorDelegate<TDelegate>([DynamicallyAccessedMembers(PublicConstructors)] Type objectType)
         where TDelegate : Delegate
     {
-#pragma warning disable IL2067 // Justification: Only public ctors needed.
+#pragma warning disable IL2067 // Only public ctors needed.
         return GetActivatorByDelegate<TDelegate>(objectType, false);
 #pragma warning restore IL2067
     }
@@ -249,29 +298,42 @@ public static class ObjectFactory
     public static TDelegate GetActivatorByDelegate<TDelegate>([DynamicallyAccessedMembers(AllConstructors)] Type objectType, bool nonPublic)
         where TDelegate : Delegate
     {
-        if (!_delegateActivatorCache.TryGetValue((objectType, typeof(TDelegate)), out var info))
-            info = _delegateActivatorCache.GetOrAdd((objectType, typeof(TDelegate)), _ => CreateActivator<TDelegate>(objectType, nonPublic));
+        return GetOrCreateActivatorByDelegate<TDelegate>(objectType, nonPublic, static key => CreateActivator<TDelegate>(key.ObjectType, true));
+    }
+
+    internal static ConstructorInfo GetConstructor([DynamicallyAccessedMembers(AllConstructors)] Type objectType, Type[] parameterTypes)
+    {
+        const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        return objectType.GetConstructor(bindingFlags, null, parameterTypes, null) ?? throw new MissingMethodException("A matching constructor was not found.");
+    }
+
+    private static TDelegate GetOrCreateActivatorByDelegate<TDelegate>([DynamicallyAccessedMembers(AllConstructors)] Type objectType, bool nonPublic, Func<Key, DelegateInfo> infoFactory)
+        where TDelegate : Delegate
+    {
+        var key = new Key(objectType, typeof(TDelegate));
+        var info = s_delegateActivatorCache.GetOrAdd(key, infoFactory);
 
         if (!nonPublic && !info.IsPublic)
-            ThrowNonPublicConstructorException(objectType);
+            ThrowNonPublicCtorException(objectType);
 
         return (TDelegate)info.Activator;
     }
 
-    private static (TDelegate Activator, bool IsPublic) CreateActivator<TDelegate>([DynamicallyAccessedMembers(AllConstructors)] Type objectType, bool nonPublic)
+    private static DelegateInfo CreateActivator<TDelegate>([DynamicallyAccessedMembers(AllConstructors)] Type objectType, bool nonPublic)
         where TDelegate : Delegate
     {
-#pragma warning disable IL2090 // Justification: Delegates always generate metadata for the Invoke method.
-        var delegateInfo = typeof(TDelegate).GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+#pragma warning disable IL2090 // Delegates always generate metadata for the Invoke method.
+        const BindingFlags invokeBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+        var delegateInfo = typeof(TDelegate).GetMethod("Invoke", invokeBindingFlags);
 #pragma warning restore IL2090
 
         if (delegateInfo == null)
-            throw new MissingMethodException("Missing metadata for delegate Invoke method.");
+            throw new MissingMethodException("Missing metadata for delegate 'Invoke' method.");
 
         var returnType = delegateInfo.ReturnType;
 
         if (returnType.IsByRef)
-            throw new NotSupportedException("The delegate cannot have a ref return type.");
+            throw new NotSupportedException("The constructor cannot have a ref return type.");
 
         if (!returnType.IsAssignableFrom(objectType))
             throw new InvalidCastException("The object type must be assignable to the delegate return type.");
@@ -280,7 +342,7 @@ public static class ObjectFactory
         var parameterTypes = parameters.Select(p => p.ParameterType).ToArray();
 
         if (parameters.Any(p => p.IsOut) || parameterTypes.Any(p => p.IsByRef))
-            throw new NotSupportedException("The delegate cannot have ref or out parameters.");
+            throw new NotSupportedException("The constructor cannot have ref or out parameters.");
 
         var parameterExpressions = parameterTypes.Select((p, i) => Expression.Parameter(p, "p" + i)).ToArray();
 
@@ -294,15 +356,12 @@ public static class ObjectFactory
         }
         else
         {
-            const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-            ConstructorInfo constructor = objectType.GetConstructor(bindingFlags, null, parameterTypes, null)
-                ?? throw new MissingMethodException("A matching constructor was not found.");
+            var constructor = GetConstructor(objectType, parameterTypes);
 
             isPublic = constructor.IsPublic;
 
             if (!nonPublic && !isPublic)
-                ThrowNonPublicConstructorException(objectType);
+                ThrowNonPublicCtorException(objectType);
 
             expression = Expression.New(constructor, parameterExpressions);
         }
@@ -310,8 +369,10 @@ public static class ObjectFactory
         if (objectType.IsValueType && returnType != objectType)
             expression = Expression.Convert(expression, returnType);
 
-        return (Expression.Lambda<TDelegate>(expression, parameterExpressions).Compile(), isPublic);
+        return new(Expression.Lambda<TDelegate>(expression, parameterExpressions).Compile(), isPublic);
     }
 
-    private static void ThrowNonPublicConstructorException(Type objectType) => throw new MissingMethodException($"Requested constructor for type '{objectType}' is not public.");
+    private static void ThrowNoParameterlessCtor(Type type) => throw new MissingMethodException($"No parameterless constructor defined for type '{type}'.");
+
+    private static void ThrowNonPublicCtorException(Type type) => throw new MissingMethodException($"Requested constructor for type '{type}' is not public.");
 }

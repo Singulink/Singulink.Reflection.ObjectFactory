@@ -5,7 +5,10 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
+#if NETSTANDARD
 using System.Runtime.Serialization;
+#endif
 
 namespace Singulink.Reflection;
 

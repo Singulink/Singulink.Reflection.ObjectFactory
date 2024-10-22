@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Singulink.Reflection;
+﻿namespace System.Diagnostics.CodeAnalysis;
 
 #if NETSTANDARD
 

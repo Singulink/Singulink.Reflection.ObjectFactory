@@ -28,7 +28,7 @@ You can view the API on [FuGet](https://www.fuget.org/packages/Singulink.Reflect
 
 ## Benchmarks
 
-Entries with an `_Activator` suffix use `System.Activator` and the entries below that with an `_ObjectFactory` suffix use this library for comparison.
+Entries with an `_Activator` suffix use `System.Activator` and those with an `_ObjectFactory` suffix use this library.
 
 ### .NET 8
 
